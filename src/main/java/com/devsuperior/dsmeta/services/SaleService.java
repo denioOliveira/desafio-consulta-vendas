@@ -1,11 +1,18 @@
 package com.devsuperior.dsmeta.services;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import com.devsuperior.dsmeta.dto.SaleMinDTO;
+import com.devsuperior.dsmeta.dto.SaleReportDTO;
 import com.devsuperior.dsmeta.entities.Sale;
 import com.devsuperior.dsmeta.repositories.SaleRepository;
 
@@ -15,9 +22,22 @@ public class SaleService {
 	@Autowired
 	private SaleRepository repository;
 	
+	private static DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
 	public SaleMinDTO findById(Long id) {
 		Optional<Sale> result = repository.findById(id);
 		Sale entity = result.get();
 		return new SaleMinDTO(entity);
+	}
+
+	public Page<SaleReportDTO> getReport(String start, String end, String sellerName, Pageable pageable) {
+
+		LocalDate today = LocalDate.ofInstant(Instant.now(), ZoneId.systemDefault());
+		LocalDate endDate = "".equals(end) ? today : LocalDate.parse(end, dtf);
+		LocalDate startDate = "".equals(start) ? endDate.minusYears(1L) : LocalDate.parse(start, dtf);
+
+		Page<Sale> result = repository.searchSales(startDate, endDate, sellerName, pageable);
+		return result.map(x -> new SaleReportDTO(x));
+
 	}
 }
